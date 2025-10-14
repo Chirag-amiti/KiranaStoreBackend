@@ -1,0 +1,6 @@
+@kiranaStore_HostAddress = http://localhost:5182
+
+GET {{kiranaStore_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
