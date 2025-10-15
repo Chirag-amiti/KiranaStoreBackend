@@ -41,7 +41,7 @@ namespace KiranaStore.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct, [FromQuery] string role)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct, [FromHeader] string role)
         {
             if (role != "admin") return Unauthorized("Only admin can update products.");
 
@@ -53,11 +53,11 @@ namespace KiranaStore.Controllers
             product.Quantity = updatedProduct.Quantity;
 
             await _context.SaveChangesAsync();
-            return NoContent();
+            return NoContent(); // -> return HTTP 204
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id, [FromQuery] string role)
+        public async Task<IActionResult> DeleteProduct(int id, [FromHeader] string role)
         {
             if (role != "admin") return Unauthorized("Only admin can delete products.");
 
