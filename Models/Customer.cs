@@ -11,7 +11,6 @@ namespace KiranaStore.Models
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        // Navigation property: one customer can have many orders
         public List<Order> Orders { get; set; } = new List<Order>();
     }
 }
