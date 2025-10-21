@@ -25,7 +25,7 @@ namespace KiranaStore.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id); 
+            var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound(); // -> return HTTP 404
             return product; // -> return HTTP 200
         }
@@ -53,8 +53,12 @@ namespace KiranaStore.Controllers
             product.Quantity = updatedProduct.Quantity;
 
             await _context.SaveChangesAsync();
-            return NoContent(); // -> return HTTP 204 (Pending: we have to pass 200 HTTP request code with responce message )
+
+            // return NoContent(); // -> return HTTP 204 (Pending - done: we have to pass 200 HTTP request code with responce message )
+
+            return Ok(new { message = "Product updated successfully." });
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id, [FromHeader] string role)
