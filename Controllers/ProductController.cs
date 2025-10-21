@@ -40,6 +40,31 @@ namespace KiranaStore.Controllers
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
+        [HttpPut("bulk-update")]
+        public async Task<IActionResult> UpdateMultipleProducts([FromBody] List<Product> updatedProducts, [FromHeader] string role)
+        {
+            if (role != "admin")
+                return Unauthorized("Only admin can update the products.");
+
+            if (updatedProducts == null || !updatedProducts.Any())
+                return BadRequest("No products provided for update or the body is not given.");
+
+            foreach (var updatedProduct in updatedProducts)
+            {
+                var product = await _context.Products.FindAsync(updatedProduct.Id);
+                if (product == null)
+                    continue;
+
+                product.Name = updatedProduct.Name;
+                product.Price = updatedProduct.Price;
+                product.Quantity = updatedProduct.Quantity;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Products updated successfully.");
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct, [FromHeader] string role)
         {
