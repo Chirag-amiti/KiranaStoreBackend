@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using KiranaStore.Data;
+using KiranaStore.Services.Interfaces;
+using KiranaStore.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,9 @@ builder.Services.AddDbContext<KiranaContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
     ));
+
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductJsonService, ProductJsonService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -27,8 +32,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-
 app.Run();
+
+
 
 
 

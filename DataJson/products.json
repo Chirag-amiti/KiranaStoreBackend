@@ -16,5 +16,11 @@
     "Name": "Snaks",
     "Price": 250,
     "Quantity": 14
+  },
+  {
+    "Id": 4,
+    "Name": "testing 3 nov",
+    "Price": 100,
+    "Quantity": 21
   }
 ]
