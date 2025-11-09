@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using KiranaStore.Models;
-using KiranaStore.Helpers;
 using KiranaStore.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace KiranaStore.Controllers
 {
@@ -10,85 +10,75 @@ namespace KiranaStore.Controllers
     public class ProductJsonController : ControllerBase
     {
         private readonly IProductJsonService _service;
+        private readonly ILogger<ProductJsonController> _logger;
 
-        public ProductJsonController(IProductJsonService service)
+        public ProductJsonController(IProductJsonService service, ILogger<ProductJsonController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet]
         public IActionResult GetProducts()
         {
-            // var products = JsonHelper.ReadJson<Product>();
-            // return Ok(products);
-
+            _logger.LogInformation("[ProductJsonController][GetProducts] Fetching all products...");
             var products = _service.GetAll();
+            _logger.LogInformation("[ProductJsonController][GetProducts] Fetched {Count} products.", products?.Count ?? 0);
             return Ok(products);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetProduct(int id)
         {
-            // var products = JsonHelper.ReadJson<Product>();
-            // var product = products.FirstOrDefault(p => p.Id == id);
-            // if (product == null) return NotFound();
-            // return Ok(product);
-
+            _logger.LogInformation("[ProductJsonController][GetProduct] Fetching JSON product with ID {Id}", id);
             var product = _service.GetById(id);
-            if (product == null) return NotFound();
+
+            if (product == null)
+            {
+                _logger.LogWarning("[ProductJsonController][GetProduct] Product with ID {Id} not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("[ProductJsonController][GetProduct] Found product {Name} (ID {Id})", product.Name, product.Id);
             return Ok(product);
         }
 
         [HttpPost]
         public IActionResult CreateProduct([FromBody] Product product, [FromHeader] string role)
         {
-            /*
-            if (role != "admin") return Unauthorized("Only admin can add products.");
+            _logger.LogInformation("[ProductJsonController][CreateProduct] Attempting to create product {Name}", product?.Name);
 
-            var products = JsonHelper.ReadJson<Product>();
-
-            // Here I amke a auto-generate ID if it is not provided
-            if (product.Id == 0)
-                product.Id = products.Any() ? products.Max(p => p.Id) + 1 : 1;
-
-            products.Add(product);
-            JsonHelper.WriteJson(products);
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product); // return 201
-            */
-
-            if (role != "admin") return Unauthorized("Only admin can add products.");
+            if (role != "admin")
+            {
+                _logger.LogWarning("[ProductJsonController][CreateProduct] Unauthorized attempt by role {Role}", role);
+                return Unauthorized("Only admin can add products.");
+            }
 
             var created = _service.Create(product);
+            _logger.LogInformation("[ProductJsonController][CreateProduct] Product {Name} created successfully with ID {Id}", created.Name, created.Id);
             return CreatedAtAction(nameof(GetProduct), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
         public IActionResult UpdateProduct(int id, [FromBody] Product updatedProduct, [FromHeader] string role)
         {
-            /*
-            if (role != "admin") return Unauthorized("Only admin can update products.");
+            _logger.LogInformation("[ProductJsonController][UpdateProduct] Updating product with ID {Id}", id);
 
-            var products = JsonHelper.ReadJson<Product>();
-            var product = products.FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-
-            product.Name = updatedProduct.Name;
-            product.Price = updatedProduct.Price;
-            product.Quantity = updatedProduct.Quantity;
-
-            JsonHelper.WriteJson(products);
-            return Ok(new { message = "Product updated successfully." });
-            */
-
-            if (role != "admin") return Unauthorized("Only admin can update products.");
+            if (role != "admin")
+            {
+                _logger.LogWarning("[ProductJsonController][UpdateProduct] Unauthorized update attempt by role {Role}", role);
+                return Unauthorized("Only admin can update products.");
+            }
 
             try
             {
                 _service.Update(id, updatedProduct);
+                _logger.LogInformation("[ProductJsonController][UpdateProduct] Product with ID {Id} updated successfully.", id);
                 return Ok(new { message = "Product updated successfully." });
             }
             catch (KeyNotFoundException)
             {
+                _logger.LogWarning("[ProductJsonController][UpdateProduct] Product with ID {Id} not found for update.", id);
                 return NotFound();
             }
         }
@@ -96,55 +86,39 @@ namespace KiranaStore.Controllers
         [HttpPut("bulk-update")]
         public IActionResult UpdateMultipleProducts([FromBody] List<Product> updatedProducts, [FromHeader] string role)
         {
-            /*
-            if (role != "admin") return Unauthorized("Only admin can update products.");
+            _logger.LogInformation("[ProductJsonController][BulkUpdate] Bulk update request received for {Count} products", updatedProducts?.Count ?? 0);
 
-            var products = JsonHelper.ReadJson<Product>();
-
-            foreach (var updatedProduct in updatedProducts)
+            if (role != "admin")
             {
-                var product = products.FirstOrDefault(p => p.Id == updatedProduct.Id);
-                if (product == null) continue;
-
-                product.Name = updatedProduct.Name;
-                product.Price = updatedProduct.Price;
-                product.Quantity = updatedProduct.Quantity;
+                _logger.LogWarning("[ProductJsonController][BulkUpdate] Unauthorized bulk update attempt by role {Role}", role);
+                return Unauthorized("Only admin can update products.");
             }
 
-            JsonHelper.WriteJson(products);
-            return Ok("Products updated successfully.");
-            */
-
-            if (role != "admin") return Unauthorized("Only admin can update products.");
-
             _service.BulkUpdate(updatedProducts);
+            _logger.LogInformation("[ProductJsonController][BulkUpdate] Bulk update completed successfully.");
             return Ok("Products updated successfully.");
         }
 
         [HttpDelete("{id}")]
         public IActionResult DeleteProduct(int id, [FromHeader] string role)
         {
-            /*
-            if (role != "admin") return Unauthorized("Only admin can delete products.");
+            _logger.LogInformation("[ProductJsonController][DeleteProduct] Delete request for product ID {Id}", id);
 
-            var products = JsonHelper.ReadJson<Product>();
-            var product = products.FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-
-            products.Remove(product);
-            JsonHelper.WriteJson(products);
-            return NoContent();
-            */
-
-            if (role != "admin") return Unauthorized("Only admin can delete products.");
+            if (role != "admin")
+            {
+                _logger.LogWarning("[ProductJsonController][DeleteProduct] Unauthorized delete attempt by role {Role}", role);
+                return Unauthorized("Only admin can delete products.");
+            }
 
             try
             {
                 _service.Delete(id);
+                _logger.LogInformation("[ProductJsonController][DeleteProduct] Product with ID {Id} deleted successfully.", id);
                 return NoContent();
             }
             catch (KeyNotFoundException)
             {
+                _logger.LogWarning("[ProductJsonController][DeleteProduct] Product with ID {Id} not found for deletion.", id);
                 return NotFound();
             }
         }
@@ -152,33 +126,28 @@ namespace KiranaStore.Controllers
         [HttpPost("{id}/buy")]
         public IActionResult BuyProduct(int id, [FromQuery] string role, [FromQuery] int quantity = 1)
         {
-            /*
-            if (role != "customer") return Unauthorized("Only customer can buy products.");
+            _logger.LogInformation("[ProductJsonController][BuyProduct] Buy request received for Product ID {Id}, Quantity {Qty}, Role {Role}", id, quantity, role);
 
-            var products = JsonHelper.ReadJson<Product>();
-            var product = products.FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-            if (product.Quantity < quantity) return BadRequest("Not enough stock.");
-
-            product.Quantity -= quantity;
-            JsonHelper.WriteJson(products);
-
-            return Ok(new { product.Id, product.Name, product.Quantity });
-            */
-
-            if (role != "customer") return Unauthorized("Only customer can buy products.");
+            if (role != "customer")
+            {
+                _logger.LogWarning("[ProductJsonController][BuyProduct] Unauthorized buy attempt by role {Role}", role);
+                return Unauthorized("Only customer can buy products.");
+            }
 
             try
             {
                 var product = _service.Buy(id, quantity);
+                _logger.LogInformation("[ProductJsonController][BuyProduct] Purchase successful. Product ID {Id}, Remaining Quantity {Qty}", product.Id, product.Quantity);
                 return Ok(new { product.Id, product.Name, product.Quantity });
             }
             catch (KeyNotFoundException)
             {
+                _logger.LogWarning("[ProductJsonController][BuyProduct] Product with ID {Id} not found during purchase.", id);
                 return NotFound();
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogError(ex, "[ProductJsonController][BuyProduct] Error during product purchase for product ID {Id}", id);
                 return BadRequest(ex.Message);
             }
         }
